@@ -20,14 +20,18 @@ git clone [https://github.com/hpval/dvd_rental_bd.git](https://github.com/hpval/
 cd dvd_rental_bd
 ```
 
-### 2. Levantar entorno
+### 2. Agregar archivo .env
+Dar click en create new file en dvd_rental_bd, nombrarlo ".env" y pegar en el lo siguiente:
+DATABASE_URL=postgresql://postgres:password123@db:5432/pagila 
+
+### 3. Levantar entorno
 Este comando construye los contenedores, crea el servicio PostgreSQL, inicializa la base pagila y ejecuta automáticamente el script pagila.sql:
 
 ```bash
 docker-compose up --build
 ```
 
-### 2.1 Verificación de la Base de Datos
+### 3.1 Verificación de la Base de Datos
 Para confirmar que la base de datos se cargó correctamente y las tablas están listas, ejecuta:
 
 ```bash
