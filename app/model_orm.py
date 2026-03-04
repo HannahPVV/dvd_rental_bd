@@ -92,7 +92,7 @@ class Rental(Base):
 
 class Payment(Base):
     __tablename__ = "payment"
-    payment_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    payment_id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
     customer_id: Mapped[int] = mapped_column(Integer, ForeignKey("customer.customer_id"), nullable=False)
     staff_id: Mapped[int] = mapped_column(Integer, ForeignKey("staff.staff_id"), nullable=False)
     rental_id: Mapped[int] = mapped_column(Integer, ForeignKey("rental.rental_id"), nullable=False)

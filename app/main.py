@@ -66,17 +66,19 @@ def crear_pago(pago: schemas.CreacionPagos, db: Session = Depends(get_db)):
     
     #Giselle: Validar que el rental_id exista y corresponda al cliente.
     if pago.rental_id:
-        renta_check = db.query(models.Rental).filter(models.Rental.rental_id == pago.rental_id, models.Rental.customer_id == pago.customer_id).first()
+        renta_check = db.query(model_orm.Rental).filter(model_orm.Rental.rental_id == pago.rental_id, model_orm.Rental.customer_id == pago.customer_id).first()
         if not renta_check:
             raise HTTPException(status_code=400, detail="La renta no existe o no pertenece a este cliente")
 
+    fecha_valida = datetime(2022, 1, 1, 10, 0, 0)
+
     #Giselle: Creamos el pago que se va a guardar en la base de datos
-    nuevo_pago = models.Payment(
+    nuevo_pago = model_orm.Payment(
         customer_id=pago.customer_id,
         staff_id=pago.staff_id,
         amount=pago.amount,
         rental_id=pago.rental_id,
-        payment_date=datetime.now()
+        payment_date=fecha_valida
     )
     
     try:

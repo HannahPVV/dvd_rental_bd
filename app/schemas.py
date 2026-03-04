@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
 class RespuestaDevolucion(BaseModel):
     rental_id: int
