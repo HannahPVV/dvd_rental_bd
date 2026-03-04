@@ -109,3 +109,31 @@ def registrar_devolucion(rental_id: int, db: Session = Depends(get_db)):
             raise HTTPException(status_code=500, detail=f"Error de base de datos: {error_str}")
 
     raise HTTPException(status_code=503, detail="La fila está bloqueada por otra transacción.")
+
+
+@app.post("/payments")
+def crear_pago(pago: schemas.CreacionPagos, db: Session = Depends(get_db)):
+    
+    #Giselle: Validar que el rental_id exista y corresponda al cliente.
+    if pago.rental_id:
+        renta_check = db.query(models.Rental).filter(models.Rental.rental_id == pago.rental_id, models.Rental.customer_id == pago.customer_id).first()
+        if not renta_check:
+            raise HTTPException(status_code=400, detail="La renta no existe o no pertenece a este cliente")
+
+    #Giselle: Creamos el pago que se va a guardar en la base de datos
+    nuevo_pago = models.Payment(
+        customer_id=pago.customer_id,
+        staff_id=pago.staff_id,
+        amount=pago.amount,
+        rental_id=pago.rental_id,
+        payment_date=datetime.now()
+    )
+    
+    try:
+        db.add(nuevo_pago)
+        db.commit()
+        db.refresh(nuevo_pago)
+        return {"mensaje": "pago registrado", "id": nuevo_pago.payment_id}
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="No se pudo registrar el pago") 
