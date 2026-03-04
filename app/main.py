@@ -8,6 +8,56 @@ from app.database import get_db
 
 app = FastAPI()
 
+
+"""Estrategia de endpoint /rentals: Bloqueo Pesimista 
+Se usa 'with_for_update' para cumplir con el requisito de "Bajo dos requests simultáneos por el mismo inventory_id, 
+solo uno debe concretarse". Lo que hace la base de datos es bloquear la fila y solo una procesa la renta.
+Considero que es más práctico que el optimista porque no se requieren columnas de versión ni reintentos, y al ser bloqueo por 
+fila, no afecta el rendimiento de otras rentas simultáneas de otros dvd's."""
+
+#decorador llama el modelo de datos de salida que es el schemas.RentaCreada
+#funcion llama al schema de CrearRenta que es el modelo de datos los de entrada
+@app.post("/rentals", response_model=schemas.RentaCreada, status_code=201)
+def crear_renta(entrada: schemas.CrearRenta, db: Session = Depends(get_db)): 
+    inventory_id = entrada.inventory_id
+    customer_id = entrada.customer_id
+    staff_id = entrada.staff_id
+    
+    #se selecciona a la fila del inventario que se solicta rentar y tiene el bloqueo pesimista con with_for_update
+    fila_bloqueada = db.query(model_orm.Inventory).filter(model_orm.Inventory.inventory_id == inventory_id).with_for_update().first()
+    
+    #validación de si existe id que se quiere rentar
+    if not fila_bloqueada:
+        raise HTTPException(status_code=404, detail="No se encontro ID en el inventario")
+    
+    #validación de si el dvd ya está rentado
+    #si la fecha de return_date en None significa que ya esta rentado, porque no han regresado el dvd
+    rentado = db.query(model_orm.Rental).filter(model_orm.Rental.inventory_id == inventory_id, model_orm.Rental.return_date == None).first()
+    if rentado:
+        raise HTTPException(status_code=400, detail="El DVD ya está rentado")
+
+    # se crea variable de nueva renta que le pasa los datos que vamos a ingresar si pasa las validaciones
+    nueva_renta = model_orm.Rental(
+        inventory_id=inventory_id,
+        customer_id=customer_id,
+        staff_id=staff_id,
+        rental_date=datetime.now(),
+        last_update=datetime.now(),)
+    
+
+    # en el try se agregan las valores de la nueva renta, se hace commit para guardar
+    try:
+        db.add(nueva_renta)
+        db.commit()  #se desbloquea el with_for_update al hacer commit
+        db.refresh(nueva_renta) 
+        return nueva_renta 
+    
+    except Exception as e:
+        db.rollback() #si hay un error para liberar el with_for_update se hace rollback
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}") 
+    
+
+
 @app.post("/returns/{rental_id}", response_model=schemas.RespuestaDevolucion)
 def registrar_devolucion(rental_id: int, db: Session = Depends(get_db)):
 
