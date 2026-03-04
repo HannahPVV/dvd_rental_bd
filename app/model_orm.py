@@ -1,10 +1,10 @@
-from database import Base
+from app.database import Base
 from datetime import datetime, date
 from typing import  Optional
 from sqlalchemy import String, Integer, Numeric, Boolean, DateTime, Date, ForeignKey, text
 from sqlalchemy.orm import  Mapped, mapped_column
 
-# Clase base para todos los modelos
+# Clase base para todos los modelos (las tablas que pensamos son más útiles para nuestro proyecto)
 
 class Address(Base):
     __tablename__ = "address"
