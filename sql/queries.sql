@@ -18,6 +18,35 @@ LIMIT 10;
 
 
 -- CTES
+
+-- Raquel: Q2 - Top 3 películas más rentadas por tienda (CTE)
+WITH RentasPorPelicula AS (
+    SELECT 
+        i.store_id, 
+        f.film_id, 
+        f.title, 
+        COUNT(r.rental_id) AS rentals_count
+    FROM film f
+    JOIN inventory i ON f.film_id = i.film_id
+    JOIN rental r ON i.inventory_id = r.inventory_id
+    GROUP BY i.store_id, f.film_id, f.title
+),
+RankingPeliculas AS (
+    SELECT 
+        store_id, 
+        film_id, 
+        title, 
+        rentals_count,
+        ROW_NUMBER() OVER (
+            PARTITION BY store_id 
+            ORDER BY rentals_count DESC
+        ) AS rn
+    FROM RentasPorPelicula
+)
+SELECT store_id, film_id, title, rentals_count, rn
+FROM RankingPeliculas
+WHERE rn <= 3;
+
 -- Giselle: Q3 - Inventario disponible por tienda (CTE)
 -- Giselle: CTE con los inventory_id que tienen renta activa
 WITH renta_activa AS (
