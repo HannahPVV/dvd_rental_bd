@@ -2,7 +2,7 @@ from app.database import Base
 from datetime import datetime, date
 from typing import  Optional
 from sqlalchemy import String, Integer, Numeric, Boolean, DateTime, Date, ForeignKey, text
-from sqlalchemy.orm import  Mapped, mapped_column
+from sqlalchemy.orm import  Mapped, mapped_column, relationship
 
 # Clase base para todos los modelos (las tablas que pensamos son más útiles para nuestro proyecto)
 
@@ -67,6 +67,7 @@ class Film(Base):
     length: Mapped[Optional[int]] = mapped_column(Integer)
     replacement_cost: Mapped[float] = mapped_column(Numeric(5, 2), server_default=text("19.99"), nullable=False)
     last_update: Mapped[datetime] = mapped_column(DateTime, server_default=text("now()"), nullable=False)
+    inventories = relationship("Inventory", back_populates="film") #Raquel: Relaciones para poder hacer el Q2
 
 
 class Inventory(Base):
@@ -75,6 +76,8 @@ class Inventory(Base):
     film_id: Mapped[int] = mapped_column(Integer, ForeignKey("film.film_id"), nullable=False)
     store_id: Mapped[int] = mapped_column(Integer, ForeignKey("store.store_id"), nullable=False)
     last_update: Mapped[datetime] = mapped_column(DateTime, server_default=text("now()"), nullable=False)
+    film = relationship("Film", back_populates="inventories")
+    rentals = relationship("Rental", back_populates="inventory") #Raquel: Relaciones para poder hacer el Q2
 
 
 
@@ -87,6 +90,7 @@ class Rental(Base):
     return_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
     staff_id: Mapped[int] = mapped_column(Integer, ForeignKey("staff.staff_id"), nullable=False)
     last_update: Mapped[datetime] = mapped_column(DateTime, server_default=text("now()"), nullable=False)
+    inventory = relationship("Inventory", back_populates="rentals")#Raquel: Relaciones para poder hacer el Q2
 
 
 
