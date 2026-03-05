@@ -103,7 +103,7 @@ def registrar_devolucion(rental_id: int, db: Session = Depends(get_db)):
 
             if "serialization" in error_str or "deadlock" in error_str or "timeout" in error_str:
                 intentos += 1
-                time.sleep(0.2)
+                time.sleep(0.2* (2 ** intentos)) #Raquel: Esto es para lo del backoff
                 continue
 
             raise HTTPException(status_code=500, detail=f"Error de base de datos: {error_str}")
