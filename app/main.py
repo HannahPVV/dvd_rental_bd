@@ -130,28 +130,48 @@ def registrar_devolucion(rental_id: int, db: Session = Depends(get_db)):
 @app.post("/payments")
 def crear_pago(pago: schemas.CreacionPagos, db: Session = Depends(get_db)):
     
-    #Giselle: Validar que el rental_id exista y corresponda al cliente.
-    if pago.rental_id:
-        renta_check = db.query(model_orm.Rental).filter(model_orm.Rental.rental_id == pago.rental_id, model_orm.Rental.customer_id == pago.customer_id).first()
-        if not renta_check:
-            raise HTTPException(status_code=400, detail="La renta no existe o no pertenece a este cliente")
+    max_intentos = 3
+    intento = 0
 
-    fecha_valida = datetime(2022, 1, 1, 10, 0, 0)
+    while intento < max_intentos:
+        try:
+            # Giselle: nivel de aislamiento de la transacción (REPEATABLE READ)
+            db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ"))
 
-    #Giselle: Creamos el pago que se va a guardar en la base de datos
-    nuevo_pago = model_orm.Payment(
-        customer_id=pago.customer_id,
-        staff_id=pago.staff_id,
-        amount=pago.amount,
-        rental_id=pago.rental_id,
-        payment_date=fecha_valida
-    )
+            #Giselle: Validar que el rental_id exista y corresponda al cliente.
+            if pago.rental_id:
+                renta_check = db.query(model_orm.Rental).filter(model_orm.Rental.rental_id == pago.rental_id, model_orm.Rental.customer_id == pago.customer_id).first()
+                if not renta_check:
+                    raise HTTPException(status_code=400, detail="La renta no existe o no pertenece a este cliente")
+
+            fecha_valida = datetime(2022, 1, 1, 10, 0, 0)
+
+            #Giselle: Creamos el pago que se va a guardar en la base de datos
+            nuevo_pago = model_orm.Payment(
+                customer_id=pago.customer_id,
+                staff_id=pago.staff_id,
+                amount=pago.amount,
+                rental_id=pago.rental_id,
+                payment_date=fecha_valida
+            )
     
-    try:
-        db.add(nuevo_pago)
-        db.commit()
-        db.refresh(nuevo_pago)
-        return {"mensaje": "pago registrado", "id": nuevo_pago.payment_id}
-    except Exception:
-        db.rollback()
-        raise HTTPException(status_code=500, detail="No se pudo registrar el pago") 
+    
+            db.add(nuevo_pago)
+            db.commit()
+            db.refresh(nuevo_pago)
+            return {"mensaje": "pago registrado", "id": nuevo_pago.payment_id}
+        except Exception as e:
+            db.rollback()
+            error_texto = str(e).lower()
+
+            # Giselle: manejo de posibles errores de concurrencia
+            if "deadlock" in error_texto or "serialization" in error_texto:
+
+                intento += 1
+                tiempo_espera = 0.3 * (2 ** intento)
+                time.sleep(tiempo_espera)
+                continue
+
+            raise HTTPException(status_code=500, detail="No se pudo registrar el pago") 
+    
+    raise HTTPException(status_code=503, detail="No se pudo completar el pago debido a conflictos de concurrencia.")
