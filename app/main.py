@@ -22,39 +22,55 @@ def crear_renta(entrada: schemas.CrearRenta, db: Session = Depends(get_db)):
     inventory_id = entrada.inventory_id
     customer_id = entrada.customer_id
     staff_id = entrada.staff_id
-    
-    #se selecciona a la fila del inventario que se solicta rentar y tiene el bloqueo pesimista con with_for_update
-    fila_bloqueada = db.query(model_orm.Inventory).filter(model_orm.Inventory.inventory_id == inventory_id).with_for_update().first()
-    
-    #validación de si existe id que se quiere rentar
-    if not fila_bloqueada:
-        raise HTTPException(status_code=404, detail="No se encontro ID en el inventario")
-    
-    #validación de si el dvd ya está rentado
-    #si la fecha de return_date en None significa que ya esta rentado, porque no han regresado el dvd
-    rentado = db.query(model_orm.Rental).filter(model_orm.Rental.inventory_id == inventory_id, model_orm.Rental.return_date == None).first()
-    if rentado:
-        raise HTTPException(status_code=400, detail="El DVD ya está rentado")
 
-    # se crea variable de nueva renta que le pasa los datos que vamos a ingresar si pasa las validaciones
-    nueva_renta = model_orm.Rental(
-        inventory_id=inventory_id,
-        customer_id=customer_id,
-        staff_id=staff_id,
-        rental_date=datetime.now(),
-        last_update=datetime.now(),)
+    num_intentos = 0
+    time_espera = 5
     
+    while num_intentos < 3:
+        try:
+            #linea par poner read committed
+            db.execute(text("SET TRANSACTION ISOLATION LEVEL READ COMMITTED"))
 
-    # en el try se agregan las valores de la nueva renta, se hace commit para guardar
-    try:
-        db.add(nueva_renta)
-        db.commit()  #se desbloquea el with_for_update al hacer commit
-        db.refresh(nueva_renta) 
-        return nueva_renta 
+            #se selecciona a la fila del inventario que se solicta rentar y tiene el bloqueo pesimista con with_for_update
+            fila_bloqueada = db.query(model_orm.Inventory).filter(model_orm.Inventory.inventory_id == inventory_id).with_for_update().first()
+            
+            #validación de si existe id que se quiere rentar
+            if not fila_bloqueada:
+                raise HTTPException(status_code=404, detail="No se encontro ID en el inventario")
+            
+            #validación de si el dvd ya está rentado
+            # # #si la fecha de return_date en None significa que ya esta rentado, porque no han regresado el dvd
+            rentado = db.query(model_orm.Rental).filter(model_orm.Rental.inventory_id == inventory_id, model_orm.Rental.return_date == None).first()
+            if rentado:
+                raise HTTPException(status_code=400, detail="El DVD ya está rentado")
+            
+            # se crea variable de nueva renta que le pasa los datos que vamos a ingresar si pasa las validaciones
+            nueva_renta = model_orm.Rental(
+                inventory_id=inventory_id,
+                customer_id=customer_id,
+                staff_id=staff_id,
+                rental_date=datetime.now(),
+                last_update=datetime.now(),)
+            
+            db.add(nueva_renta)
+            db.commit()  #se desbloquea el with_for_update al hacer commit
+            db.refresh(nueva_renta) 
+            return nueva_renta 
+        
+        except Exception as e:
+            db.rollback() #si hay un error para liberar el with_for_update se hace rollback
+            error_msg = str(e).lower()
+            if "deadlock" in error_msg or "serialization" in error_msg:
+                num_intentos += 1
+                print(f"Intento fallido {num_intentos}: ({str(e)})")
+                
+                if num_intentos < 3:
+                    time.sleep(time_espera * num_intentos)  # Backoff
+                    continue 
+
+            # Si ya falló 3 veces o no es error de bloqueo o serialización
+            raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     
-    except Exception as e:
-        db.rollback() #si hay un error para liberar el with_for_update se hace rollback
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}") 
     
 
 
