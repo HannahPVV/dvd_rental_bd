@@ -63,3 +63,20 @@ LEFT JOIN renta_activa rta ON i.inventory_id = rta.inventory_id
 WHERE rta.inventory_id IS NULL  
 GROUP BY i.store_id
 ORDER BY i.store_id;
+
+
+-- CONSULTAS OPERATIVAS / "DE SISTEMA"
+
+-- Giselle: Q6 - "Clientes con riesgo (mora)"
+-- Se muestra a los clientes que han tenido varias devoluciones tardías
+
+SELECT r.customer_id, 
+    COUNT(r.rental_id) AS late_returns_count, 
+    MAX(r.return_date) AS last_late_return_date
+FROM rental r
+JOIN inventory i ON r.inventory_id = i.inventory_id
+JOIN film f ON i.film_id = f.film_id
+WHERE r.return_date > (r.rental_date + (f.rental_duration || ' days')::interval)
+GROUP BY r.customer_id
+HAVING COUNT(r.rental_id) > 6
+ORDER BY late_returns_count DESC;
