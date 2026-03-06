@@ -69,7 +69,7 @@ WITH late_rentals AS (
         EXTRACT(DAY FROM(r.return_date - r.rental_date)) AS total_days,
         f.rental_duration AS allowed_days
     FROM rental r
-    
+
     JOIN inventory i ON r.inventory_id = i.inventory_id
     JOIN film f ON i.film_id = f.film_id
     JOIN film_category fc ON f.film_id = fc.film_id
@@ -139,4 +139,15 @@ WHERE r.return_date > (r.rental_date + (f.rental_duration || ' days')::interval)
 GROUP BY r.customer_id
 HAVING COUNT(r.rental_id) > 6
 ORDER BY late_returns_count DESC;
+
+-- Hannah: Q7 — Integridad/consistencia: inventario con rentas activas duplicadas 
+SELECT  inventory_id, 
+    COUNT(*) AS active_rentals_count,
+    ARRAY_AGG(rental_id) AS rental_ids
+FROM rental
+WHERE return_date IS NULL
+GROUP BY inventory_id
+HAVING COUNT(*) > 1;
+
+
 
