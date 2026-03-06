@@ -113,7 +113,6 @@ Auditoria AS (
         AND CAST(p.payment_date AS DATE) = d.fecha
 
     UNION ALL
-
     
     SELECT 
         payment_id, 
