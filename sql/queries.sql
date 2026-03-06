@@ -16,9 +16,6 @@ ORDER BY total_paid DESC
 LIMIT 10; 
 
 
-
--- CTES
-
 -- Raquel: Q2 - Top 3 películas más rentadas por tienda (CTE)
 WITH RentasPorPelicula AS (
     SELECT 
@@ -47,6 +44,8 @@ SELECT store_id, film_id, title, rentals_count, rn
 FROM RankingPeliculas
 WHERE rn <= 3;
 
+-- CTES
+
 -- Giselle: Q3 - Inventario disponible por tienda (CTE)
 -- Giselle: CTE con los inventory_id que tienen renta activa
 WITH renta_activa AS (
@@ -63,3 +62,61 @@ LEFT JOIN renta_activa rta ON i.inventory_id = rta.inventory_id
 WHERE rta.inventory_id IS NULL  
 GROUP BY i.store_id
 ORDER BY i.store_id;
+
+-- Raquel: Q5 - Auditoría de pagos (CTE)
+WITH PagosDuplicados AS (
+    
+    SELECT 
+        customer_id, 
+        amount, 
+        CAST(payment_date AS DATE) as fecha,
+        COUNT(*) as repeticiones
+    FROM payment
+    GROUP BY customer_id, amount, CAST(payment_date AS DATE)
+    HAVING COUNT(*) > 1 
+),
+Auditoria AS (
+    
+    SELECT 
+        p.payment_id, 
+        p.customer_id, 
+        p.amount, 
+        p.payment_date, 
+        'Pago repetido el mismo día' AS flag_reason
+    FROM payment p
+    JOIN PagosDuplicados d ON p.customer_id = d.customer_id 
+        AND p.amount = d.amount 
+        AND CAST(p.payment_date AS DATE) = d.fecha
+
+    UNION ALL
+
+    
+    SELECT 
+        payment_id, 
+        customer_id, 
+        amount, 
+        payment_date, 
+        'Monto excede umbral (Mayor a 10)' AS flag_reason
+    FROM payment
+    WHERE amount > 10.00
+)
+SELECT payment_id, customer_id, amount, payment_date, flag_reason
+FROM Auditoria
+ORDER BY payment_date DESC;
+
+-- CONSULTAS OPERATIVAS / "DE SISTEMA"
+
+-- Giselle: Q6 - "Clientes con riesgo (mora)"
+-- Se muestra a los clientes que han tenido varias devoluciones tardías
+
+SELECT r.customer_id, 
+    COUNT(r.rental_id) AS late_returns_count, 
+    MAX(r.return_date) AS last_late_return_date
+FROM rental r
+JOIN inventory i ON r.inventory_id = i.inventory_id
+JOIN film f ON i.film_id = f.film_id
+WHERE r.return_date > (r.rental_date + (f.rental_duration || ' days')::interval)
+GROUP BY r.customer_id
+HAVING COUNT(r.rental_id) > 6
+ORDER BY late_returns_count DESC;
+
