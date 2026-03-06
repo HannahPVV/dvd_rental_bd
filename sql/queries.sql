@@ -17,6 +17,10 @@ LIMIT 10;
 
 
 -- Raquel: Q2 - Top 3 películas más rentadas por tienda (CTE)
+-- Propósito:El propósito de esta consulta es mostrar las tres 
+-- películas más populares en cada sucursal, cada sucursal identificada por su id. Este query se basa en el 
+--volumen total de rentas registradas en el sistema, mostrando el id de la sucursal, 
+--el id de la película, el título de la película, el total de rentas y el lugar en el top 3 que tiene cada película.
 WITH RentasPorPelicula AS (
     SELECT 
         i.store_id, 
