@@ -63,6 +63,26 @@ WHERE rta.inventory_id IS NULL
 GROUP BY i.store_id
 ORDER BY i.store_id;
 
+-- Hannah: Q4 — Análisis de retrasos: rentas tardías agregadas por categoría (CTE)
+WITH late_rentals AS (
+    SELECT fc.category_id, r.rental_id,
+        EXTRACT(DAY FROM(r.return_date - r.rental_date)) AS total_days,
+        f.rental_duration AS allowed_days
+    FROM rental r
+
+    JOIN inventory i ON r.inventory_id = i.inventory_id
+    JOIN film f ON i.film_id = f.film_id
+    JOIN film_category fc ON f.film_id = fc.film_id
+    WHERE EXTRACT(DAY FROM(r.return_date - r.rental_date)) > f.rental_duration
+)
+SELECT c.category_id, c.name AS category_name,
+    COUNT(lr.rental_id) AS late_rentals,
+    ROUND(AVG(lr.total_days - lr.allowed_days),2) AS avg_days_late
+FROM category c
+LEFT JOIN late_rentals lr ON c.category_id = lr.category_id
+GROUP BY c.category_id, c.name
+ORDER BY late_rentals DESC;
+
 -- Raquel: Q5 - Auditoría de pagos (CTE)
 WITH PagosDuplicados AS (
     
@@ -119,4 +139,15 @@ WHERE r.return_date > (r.rental_date + (f.rental_duration || ' days')::interval)
 GROUP BY r.customer_id
 HAVING COUNT(r.rental_id) > 6
 ORDER BY late_returns_count DESC;
+
+-- Hannah: Q7 — Integridad/consistencia: inventario con rentas activas duplicadas 
+SELECT  inventory_id, 
+    COUNT(*) AS active_rentals_count,
+    ARRAY_AGG(rental_id) AS rental_ids
+FROM rental
+WHERE return_date IS NULL
+GROUP BY inventory_id
+HAVING COUNT(*) > 1;
+
+
 
