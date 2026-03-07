@@ -38,7 +38,7 @@ docker exec -it pagila_db psql -U postgres -d pagila -c "\dt"
 
 Se debería ver una lista de 21 tablas.
 
-## Ejecución de queries.sql
+## Ejecución de queries.sql 
 Para ejecutar las queries es necesario abrir una terminal, en la terminal el comando que se debe ingrear es:
 ```bash
 docker exec -it pagila_db psql -U postgres -d pagila
@@ -46,7 +46,7 @@ docker exec -it pagila_db psql -U postgres -d pagila
 Posteriormente en la terminal ya estamos dentro de Pagila por lo que copiamos el query que se quiere probar y damos enter.
 
 ## Ejecución de hot_invetory.sql
-Para hacer uso de este archivo de pgbench se abre una termnal yse pone e siguiente comando:
+Para hacer uso de este archivo de pgbench se abre una terminal y se pone e siguiente comando:
 ```bash
 docker exec -it pagila_db bash
 ```
@@ -54,7 +54,18 @@ Posteriomente el comando que se ingresa para ejecutar el script es el siguiente:
 ```bash
 pgbench -U postgres -d pagila -c 20 -j 4 -T 30 -f /scripts/pgbench/hot_inventory.sql
 ```
+## Ejecución de deadlock_pgbench.sql
+Primero es necesario asegurarse que solo el problema o la solución estén siendo probadas, una parte debe mantenerse comentada con ("--") para poder
+correr el archivo correctamente. 
 
+Para hacer uso de este archivo de pgbench se abre una terminal y se pone e siguiente comando:
+```bash
+docker cp .\scripts\pgbench\deadlock_pgbench.sql pagila_db:/deadlock_pgbench.sql
+```
+Posteriomente el comando que se ingresa para ejecutar el script es el siguiente:
+```bash
+docker exec -it pagila_db pgbench -U postgres -d pagila -c 20 -j 4 -T 30 -f /deadlock_pgbench.sql
+```
 
 
 
