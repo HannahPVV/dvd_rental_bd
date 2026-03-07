@@ -2,6 +2,8 @@
 
 Este proyecto consiste en el desarrollo de una API REST profesional para la gestión de una tienda de películas, utilizando la base de datos **Pagila**. El sistema está diseñado para manejar operaciones críticas como el registro de rentas y control de inventario mediante una arquitectura de contenedores.
 
+Repositorio: [dvd_rental_bd](https://github.com/HannahPVV/dvd_rental_bd)
+
 
 ## Herramientas
 * **Framework:** FastAPI
@@ -16,26 +18,43 @@ Este proyecto consiste en el desarrollo de una API REST profesional para la gest
 
 ### 1. Clonar el repositorio
 ```bash
-git clone [https://github.com/hpval/dvd_rental_bd.git](https://github.com/hpval/dvd_rental_bd.git)
+git clone https://github.com/HannahPVV/dvd_rental_bd.git
 cd dvd_rental_bd
 ```
 
-### 2. Agregar archivo .env
-Dar click en create new file en dvd_rental_bd, nombrarlo ".env" y pegar en el lo siguiente:
-DATABASE_URL=postgresql://postgres:password123@db:5432/pagila 
-
-### 3. Levantar entorno
+### 2. Levantar entorno
 Este comando construye los contenedores, crea el servicio PostgreSQL, inicializa la base pagila y ejecuta automáticamente el script pagila.sql:
 
 ```bash
 docker-compose up --build
 ```
 
-### 3.1 Verificación de la Base de Datos
+### 2.1 Verificación de la Base de Datos
 Para confirmar que la base de datos se cargó correctamente y las tablas están listas, ejecuta:
 
 ```bash
 docker exec -it pagila_db psql -U postgres -d pagila -c "\dt"
 ```
 
-Se deberías ver una lista de 21 tablas.
+Se debería ver una lista de 21 tablas.
+
+## Ejecución de queries.sql
+Para ejecutar las queries es necesario abrir una terminal, en la terminal el comando que se debe ingrear es:
+```bash
+docker exec -it pagila_db psql -U postgres -d pagila
+```
+Posteriormente en la terminal ya estamos dentro de Pagila por lo que copiamos el query que se quiere probar y damos enter.
+
+## Ejecución de hot_invetory.sql
+Para hacer uso de este archivo de pgbench se abre una termnal yse pone e siguiente comando:
+```bash
+docker exec -it pagila_db bash
+```
+Posteriomente el comando que se ingresa para ejecutar el script es el siguiente:
+```bash
+pgbench -U postgres -d pagila -c 20 -j 4 -T 30 -f /scripts/pgbench/hot_inventory.sql
+```
+
+
+
+
