@@ -14,6 +14,7 @@ services:
     volumes:
       #  carga la base Pagila al iniciar 
       - ./sql/pagila.sql:/docker-entrypoint-initdb.d/pagila.sql
+      - ./scripts:/scripts
 
   api:
     build: .
