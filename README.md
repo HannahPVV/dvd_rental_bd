@@ -45,6 +45,14 @@ docker exec -it pagila_db psql -U postgres -d pagila
 ```
 Posteriormente en la terminal ya estamos dentro de Pagila por lo que copiamos el query que se quiere probar y damos enter.
 
+## Ejecución de triggers.sql 
+Para ejecutar los triggers es necesario abrir una terminal, similar al caso de los queries, en la terminal el comando que se debe ingrear es:
+```bash
+docker exec -it pagila_db psql -U postgres -d pagila
+```
+Para probar los triggers, se pueden hacer los querys de prueba agregados en el archivo de triggers.sql. Ya estando dentro de Pagila, se copia
+y pega las respectivas pruebas de cada trigger.
+
 ## Ejecución de hot_invetory.sql
 Para hacer uso de este archivo de pgbench se abre una terminal y se pone e siguiente comando:
 ```bash
